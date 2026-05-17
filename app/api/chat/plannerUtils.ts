@@ -241,6 +241,13 @@ ${JSON.stringify(referencedStep.response, null, 2)}`,
       return { resolved: false, reason: `Failed to extract value: ${extractedValue}` };
     }
 
+    // Replace placeholder in api.path (e.g., /move/resolved_from_step_1 → /move/flamethrower)
+    if (stepToExecute.api?.path && typeof stepToExecute.api.path === 'string') {
+      if (stepToExecute.api.path.includes(`resolved_from_step_${placeholderStepNum}`)) {
+        stepToExecute.api.path = stepToExecute.api.path.replace(`resolved_from_step_${placeholderStepNum}`, extractedValue);
+      }
+    }
+
     if (stepToExecute.api?.parameters) {
       for (const [key, value] of Object.entries(stepToExecute.api.parameters)) {
         if (typeof value === 'string' && value.includes(`resolved_from_step_${placeholderStepNum}`)) {

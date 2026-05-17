@@ -158,7 +158,7 @@ Generate a concrete execution plan using ONLY the tools listed above.`;
           { role: 'user', content: plannerUserMessage },
         ],
         temperature: 0.5,
-        max_tokens: 1024,
+        max_tokens: 4096,
       });
 
       plannerResponse = plannerResponse.replace(/```json|```/g, '').trim();
@@ -190,7 +190,7 @@ Do NOT assume or guess any values. Re-generate the plan with concrete values onl
             { role: 'user', content: correctionMessage },
           ],
           temperature: 0.5,
-          max_tokens: 1024,
+          max_tokens: 4096,
         });
         plannerResponse = plannerResponse.replace(/```json|```/g, '').trim();
         const retryMatch = plannerResponse.match(/\{[\s\S]*\}/);

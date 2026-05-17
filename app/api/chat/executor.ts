@@ -56,8 +56,11 @@ function resolvePokeApiTool(
     const searchterm = String((parameters as any)?.searchterm ?? (parameters as any)?.name ?? '');
     return { toolName: 'searchPokemon', input: { searchterm, page } };
   }
+  if (resource === 'move' && nameOrId) {
+    return { toolName: 'fetchMoveDetails', input: { nameOrId } };
+  }
   if (resource === 'move') {
-    const searchterm = nameOrId || String((parameters as any)?.searchterm ?? (parameters as any)?.name ?? '');
+    const searchterm = String((parameters as any)?.searchterm ?? (parameters as any)?.name ?? '');
     return { toolName: 'searchMove', input: { searchterm, page } };
   }
   if (resource === 'ability') {
@@ -603,6 +606,8 @@ export async function executeIterativePlanner(
 
               parametersToUse = stepToCheck.api.parameters;
               requestBodyToUse = stepToCheck.api.requestBody;
+              // Update the path in case placeholder was in the URL path (e.g., /move/resolved_from_step_1)
+              stepToExecute.api.path = stepToCheck.api.path;
               console.log(`✅ Placeholders resolved successfully`);
             } else {
               console.log(`✅ No placeholder references detected`);

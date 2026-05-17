@@ -75,6 +75,19 @@ returns: { results: [{ id, name, shortEffect }], totalPage }
 example: GET /ability?name=levitate`,
   },
   {
+    id: 'fetchMoveDetails',
+    summary: 'Fetch full details for a specific move: type, power, accuracy, pp, damage class, effect',
+    tags: ['move', 'type', 'power', 'accuracy', 'pp', 'damage', 'class', 'effect', 'physical', 'special', 'status', 'fire', 'water', 'grass', 'electric', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy', 'normal'],
+    content: `tool: fetchMoveDetails
+api: GET /move/{nameOrId}
+summary: Get full details for a specific move by name or ID, including its type, power, accuracy, PP, damage class, and effect description.
+parameters:
+  - nameOrId (string|number, required): Move name in lowercase-hyphen format (e.g. "flamethrower", "fire-blast") or numeric ID.
+returns: { id, name, type, power, accuracy, pp, damage_class, effect, effect_chance, priority, target }
+example: GET /move/flamethrower
+note: Use this when you need to check a specific move's TYPE or detailed attributes. The fetchPokemonDetails endpoint returns move names but NOT their types — use this tool to resolve move types.`,
+  },
+  {
     id: 'searchBerry',
     summary: 'Search berries by name or list all berries',
     tags: ['berry', 'item', 'held', 'natural-gift', 'growth', 'fruit'],

@@ -2,6 +2,7 @@ import { dynamicApiRequest } from "./services/apiService";
 import { setElasticDashModule } from "@/ed_workflows";
 import {
   fetchPokemonDetailsTool,
+  fetchMoveDetailsTool,
   searchAbilityTool,
   searchBerryTool,
   searchMoveTool,
@@ -161,6 +162,16 @@ export const searchBerry = wrapTool('searchBerry', async (input: any) => {
  */
 export const searchAbility = wrapTool('searchAbility', async (input: any) => {
     return await searchAbilityTool(input);
+});
+
+/**
+ * Fetch full details for a specific move (type, power, accuracy, effect).
+ * Calls PokéAPI GET /move/{nameOrId}
+ * Use when you need a move's TYPE — fetchPokemonDetails only returns move names without types.
+ */
+export const fetchMoveDetails = wrapTool('fetchMoveDetails', async (input: any) => {
+    const { nameOrId } = input as { nameOrId: string | number };
+    return await fetchMoveDetailsTool(nameOrId);
 });
 
 // ─── Pipeline orchestration tools ──────────────────────────────────────────

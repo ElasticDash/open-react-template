@@ -438,6 +438,70 @@ export const fetchPokemonDetailsTool = async (
 };
 
 // ---------------------------------------------------------------------------
+// Move details
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches full details for a single move by name or ID.
+ *
+ * Returns type, power, accuracy, PP, damage class, and English effect text.
+ * Use this when you need to know a move's TYPE — the `/pokemon/{id}` endpoint
+ * only lists move names without their types.
+ *
+ * @returns `{ success, result }` with move details.
+ */
+export const fetchMoveDetailsTool = async (
+  nameOrId: string | number,
+): Promise<{
+  success: boolean;
+  result: {
+    id: number;
+    name: string;
+    type: string;
+    power: number | null;
+    accuracy: number | null;
+    pp: number | null;
+    damage_class: string;
+    effect: string;
+    effect_chance: number | null;
+    priority: number;
+    target: string;
+  };
+}> => {
+  try {
+    const identifier = typeof nameOrId === 'string'
+      ? nameOrId.trim().toLowerCase()
+      : nameOrId;
+    const res = await fetch(`${POKEAPI_BASE}/move/${encodeURIComponent(String(identifier))}`);
+    if (!res.ok) throw new Error(`Move not found: ${identifier}`);
+    const raw = await res.json();
+
+    const effect = (raw.effect_entries as Array<{ effect: string; short_effect: string; language: { name: string } }>)
+      ?.find((e) => e.language.name === 'en')?.short_effect ?? '';
+
+    return {
+      success: true,
+      result: {
+        id: raw.id,
+        name: raw.name,
+        type: raw.type?.name ?? 'unknown',
+        power: raw.power ?? null,
+        accuracy: raw.accuracy ?? null,
+        pp: raw.pp ?? null,
+        damage_class: raw.damage_class?.name ?? 'unknown',
+        effect,
+        effect_chance: raw.effect_chance ?? null,
+        priority: raw.priority ?? 0,
+        target: raw.target?.name ?? 'unknown',
+      },
+    };
+  } catch (error: unknown) {
+    console.warn('Error fetching move details:', error);
+    throw error;
+  }
+};
+
+// ---------------------------------------------------------------------------
 // Watchlist stubs
 // ---------------------------------------------------------------------------
 // PokéAPI has no user-specific storage. These stubs keep the existing pages
@@ -473,6 +537,7 @@ export const removeFromWatchlistTool = async (_pokemonId: number): Promise<void>
 export {
   searchPokemonTool as searchPokemon,
   fetchPokemonDetailsTool as fetchPokemonDetails,
+  fetchMoveDetailsTool as fetchMoveDetails,
   searchMoveTool as searchMove,
   searchBerryTool as searchBerry,
   searchAbilityTool as searchAbility,

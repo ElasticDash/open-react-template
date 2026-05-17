@@ -20,6 +20,7 @@ General tool reference:
 |----------------------|----------------------------|-------------------------------------------------------|
 | searchPokemon        | GET /pokemon               | Search Pokémon by name or list all (paginated)        |
 | fetchPokemonDetails  | GET /pokemon/{idOrName}    | Full details: stats, moves, abilities, types, species |
+| fetchMoveDetails     | GET /move/{nameOrId}       | Full move details: type, power, accuracy, pp, effect  |
 | searchMove           | GET /move                  | Search moves by name or list all (paginated)          |
 | searchAbility        | GET /ability               | Search abilities by name or list all (paginated)      |
 | searchBerry          | GET /berry                 | Search berries by name or list all (paginated)        |
@@ -44,16 +45,21 @@ Always use lowercase hyphenated names in path segments and parameters.
 1. Use `GET /pokemon/{name}` for a KNOWN Pokémon name → maps to fetchPokemonDetails.
 2. Use `GET /pokemon` with `name` parameter to SEARCH by name → maps to searchPokemon.
 3. Use `GET /pokemon` without parameters (add `page`) to LIST all → maps to searchPokemon.
-4. Same pattern applies to `/move`, `/ability`, `/berry`.
-5. NEVER invent endpoints, parameters, or paths not shown in the available tools.
-6. NEVER ask the user for information that can be derived from their query.
-7. All parameter values must be concrete. Use `resolved_from_step_N` ONLY for chained steps.
+4. Use `GET /move/{name}` to get a specific move's type, power, accuracy → maps to fetchMoveDetails.
+5. Same pattern applies to `/ability`, `/berry`.
+6. NEVER invent endpoints, parameters, or paths not shown in the available tools.
+7. NEVER ask the user for information that can be derived from their query.
+8. All parameter values must be concrete. Use `resolved_from_step_N` ONLY for chained steps.
+9. For queries involving a Pokémon's moves filtered by type (e.g., "Fire-type moves Charizard can learn"):
+   - Step 1: `GET /pokemon/{name}` to get the full move list
+   - Step 2+: `GET /move/{moveName}` for each move to verify its actual type
+   - NOTE: fetchPokemonDetails returns move names but NOT their types (type is null). You MUST use fetchMoveDetails to get type information.
 
 ---
 
 ## IMPOSSIBLE CONDITION
 
-If the user's goal cannot be answered with any of the 5 available tools, return:
+If the user's goal cannot be answered with any of the 6 available tools, return:
 
 ```json
 {
@@ -176,6 +182,27 @@ For clarification (ONLY when user intent is genuinely ambiguous):
       "step_number": 1,
       "description": "Fetch full details for Charizard (includes move list)",
       "api": { "path": "/pokemon/charizard", "method": "get", "parameters": {} }
+    }
+  ]
+}
+```
+
+### "What Water-type moves can Blastoise learn?"
+```json
+{
+  "needs_clarification": false,
+  "phase": "execution",
+  "final_deliverable": "All Water-type moves that Blastoise can learn with verified type data",
+  "execution_plan": [
+    {
+      "step_number": 1,
+      "description": "Fetch Blastoise details to get complete move learnset",
+      "api": { "path": "/pokemon/blastoise", "method": "get", "parameters": {} }
+    },
+    {
+      "step_number": 2,
+      "description": "Fetch details for each move to verify which ones are Water-type (fetchPokemonDetails returns move names without type info)",
+      "api": { "path": "/move/resolved_from_step_1", "method": "get", "parameters": {} }
     }
   ]
 }

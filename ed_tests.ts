@@ -458,6 +458,103 @@ defineTest({
 });
 
 // ═══════════════════════════════════════════════════════════════
+// DEMO CASE: Fire-type moves query (planner incomplete plan)
+// Trace: .ed_traces/2026-05-15T09-12-33_a1f7.json
+// Demonstrates: planner only generates GET /pokemon/charizard without
+// follow-up GET /move/{name} calls to verify move types.
+// The data extractor then infers types from move names (unreliable).
+// ═══════════════════════════════════════════════════════════════
+
+const FIRE_MOVES_TRACE = './.ed_traces/2026-05-15T09-12-33_a1f7.json';
+
+// The planner should generate multiple steps for type-filtered move queries
+// but in this trace it only generated 1 step — this test catches that.
+defineTest({
+  name: '[LLM_JUDGE] fire_moves_planner_completeness',
+  trace: FIRE_MOVES_TRACE,
+  target: { type: 'ai_call', step_id: 'ai_call_3' },
+  benchmarks: {
+    llm_judge: {
+      judge_prompt:
+        'The user asked "What Fire-type moves can Charizard learn?" For an accurate answer, the planner MUST generate a multi-step plan: (1) GET /pokemon/charizard to get the move list, then (2) GET /move/{name} for each move to verify its type. Does this execution plan include BOTH fetching Pokemon details AND fetching individual move details to verify types? A plan with ONLY GET /pokemon/charizard is INCOMPLETE because that endpoint returns moves with type:null.',
+      judge_score_threshold: 7,
+    },
+  },
+  run: async (input?) => {
+    const body = input ?? {
+      messages: [
+        { role: 'user', content: "What Fire-type moves can Charizard learn?" },
+      ],
+    };
+    const response = await fetch(`${APP_URL}/api/chat-stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    await response.text();
+  },
+});
+
+// The data extractor explicitly admits types were "inferred" — this should fail quality check
+defineTest({
+  name: '[LLM_JUDGE] fire_moves_data_extractor_reliability',
+  trace: FIRE_MOVES_TRACE,
+  target: { type: 'ai_call', step_id: 'ai_call_5' },
+  benchmarks: {
+    llm_judge: {
+      judge_prompt:
+        'This data extractor output claims to list Fire-type moves, but does it rely on VERIFIED type data from the API, or does it INFER/GUESS types from move names? If it says "types inferred from move names" or similar, that means the data is unreliable. Score LOW (1-3) if types are inferred/guessed, score HIGH (8-10) only if types come from verified API data.',
+      judge_score_threshold: 7,
+    },
+  },
+  run: async (input?) => {
+    const body = input ?? {
+      messages: [
+        { role: 'user', content: "What Fire-type moves can Charizard learn?" },
+      ],
+    };
+    const response = await fetch(`${APP_URL}/api/chat-stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    await response.text();
+  },
+});
+
+// The completion validator should NOT have said GOAL_COMPLETED when types were inferred
+defineTest({
+  name: 'fire_moves_validator_should_reject_inferred',
+  trace: FIRE_MOVES_TRACE,
+  target: { type: 'ai_call', step_id: 'ai_call_6' },
+  benchmarks: {
+    output_contains: 'GOAL_NOT_COMPLETED',
+  },
+  run: async (input?) => {
+    const body = input ?? {
+      messages: [
+        { role: 'user', content: "What Fire-type moves can Charizard learn?" },
+      ],
+    };
+    const response = await fetch(`${APP_URL}/api/chat-stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    await response.text();
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════
 // LLM-AS-A-JUDGE TESTS
 // These tests use the llm_judge benchmark to evaluate output quality.
 // Provider/model fall back to the user's evaluator config from the
