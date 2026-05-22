@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
+    "@anthropic-ai/sdk": "^0.98.0",
     "@headlessui/react": "^2.2.10",
     "@langfuse/openai": "^4.6.1",
     "@langfuse/otel": "^4.6.1",

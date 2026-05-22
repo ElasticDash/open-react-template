@@ -1,5 +1,6 @@
 // --- Agentic Tool Definitions ---
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WrapAIFn = <T extends (...args: any[]) => any>(name: string, fn: T, options?: { model?: string; provider?: string }) => T;
 // Use the real wrapAI from elasticdash-test (supports AI mocking and auto-telemetry).
@@ -661,21 +662,21 @@ export const kimiChatCompletion = wrapAI('kimi-k2', async ({
 }, { model: 'kimi-k2-turbo-preview', provider: 'kimi' });
 
 /**
- * Calls the Pioneer AI Chat Completion API (OpenAI-compatible) with Claude.
- * Uses claude-sonnet-4-6 via https://api.pioneer.ai/v1.
+ * Calls Claude directly via the Anthropic API.
+ * Uses claude-sonnet-4-20250514 via https://api.anthropic.com.
  *
- * @param messages - Array of chat messages
- * @param model - Model name (default: claude-sonnet-4-6)
+ * @param messages - Array of chat messages (OpenAI format, converted internally)
+ * @param model - Model name (default: claude-sonnet-4-20250514)
  * @param temperature - Sampling temperature (default: 0.0)
  * @param max_tokens - Maximum tokens in response (default: 256)
  * @param systemPrompt - Optional system prompt to prepend
  * @param sessionId - Session ID for Langfuse observation
  * @returns The trimmed content of the first response message
- * @throws Error if the Pioneer AI API call fails
+ * @throws Error if the Anthropic API call fails
  */
-export const openaiChatCompletionOriginal = wrapAI('claude-sonnet-4-6', async ({
+export const openaiChatCompletionOriginal = wrapAI('claude-sonnet-4-20250514', async ({
 	messages,
-	model = 'claude-sonnet-4-6',
+	model = 'claude-sonnet-4-20250514',
 	temperature = 0.0,
 	max_tokens = 256,
 	systemPrompt = '',
@@ -688,51 +689,56 @@ export const openaiChatCompletionOriginal = wrapAI('claude-sonnet-4-6', async ({
 	systemPrompt?: string;
 	sessionId?: string;
 }) => {
-	const openai = new OpenAI({
-		apiKey: process.env.PIONEER_API_KEY,
-		baseURL: 'https://api.pioneer.ai/v1',
+	const anthropic = new Anthropic({
+		apiKey: process.env.ANTHROPIC_API_KEY,
 	});
-	const client = observeOpenAI(openai);
-	const chatMessages: ChatCompletionMessageParam[] = systemPrompt
-		? [{ role: 'system', content: systemPrompt } as ChatCompletionMessageParam, ...messages]
-		: messages;
+	// Extract system messages and merge with systemPrompt
+	const systemMessages = messages.filter(m => m.role === 'system');
+	const nonSystemMessages = messages.filter(m => m.role !== 'system');
+	const combinedSystem = [
+		systemPrompt,
+		...systemMessages.map(m => typeof m.content === 'string' ? m.content : JSON.stringify(m.content)),
+	].filter(Boolean).join('\n\n');
+	// Convert OpenAI-style messages to Anthropic format
+	const anthropicMessages: Anthropic.MessageParam[] = nonSystemMessages.map(m => ({
+		role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+		content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+	}));
 	try {
-		const response = await client.chat.completions.create({
+		const response = await anthropic.messages.create({
 			model,
-			messages: chatMessages,
+			messages: anthropicMessages,
+			...(combinedSystem ? { system: combinedSystem } : {}),
 			temperature,
 			max_tokens,
-			...(sessionId ? { observationOptions: { session: sessionId } } : {}),
 		});
-		const content = response.choices[0].message?.content?.trim() || '';
+		const block = response.content[0];
+		const content = block?.type === 'text' ? block.text.trim() : '';
 		return content;
 	} catch (error: unknown) {
 		throw new Error(
-		typeof error === 'object' && error !== null && 'response' in error
-			// @ts-expect-error: error shape from OpenAI SDK
-			? error?.response?.data?.error?.message || 'Pioneer AI API error'
-			: (error as Error).message || 'Pioneer AI API error'
+			error instanceof Error ? error.message : 'Anthropic API error'
 		);
 	}
-}, { model: 'claude-sonnet-4-6', provider: 'claude' });
+}, { model: 'claude-sonnet-4-20250514', provider: 'claude' });
 
 /**
- * Calls Claude via Pioneer AI (OpenAI-compatible endpoint).
- * Uses claude-sonnet-4-6 via https://api.pioneer.ai/v1.
+ * Calls Claude directly via the Anthropic API.
+ * Uses claude-sonnet-4-20250514 via https://api.anthropic.com.
  * Kept as a separate export for code that references anthropicChatCompletion directly.
  *
- * @param messages - Array of chat messages
- * @param model - Model name (default: claude-sonnet-4-6)
+ * @param messages - Array of chat messages (OpenAI format, converted internally)
+ * @param model - Model name (default: claude-sonnet-4-20250514)
  * @param temperature - Sampling temperature (default: 0.0)
  * @param max_tokens - Maximum tokens in response (default: 256)
  * @param systemPrompt - Optional system prompt to prepend
  * @param sessionId - Session ID for Langfuse observation
  * @returns The trimmed content of the response
- * @throws Error if the Pioneer AI API call fails
+ * @throws Error if the Anthropic API call fails
  */
-export const anthropicChatCompletion = wrapAI('claude-sonnet-4-6', async ({
+export const anthropicChatCompletion = wrapAI('claude-sonnet-4-20250514', async ({
 	messages,
-	model = 'claude-sonnet-4-6',
+	model = 'claude-sonnet-4-20250514',
 	temperature = 0.0,
 	max_tokens = 256,
 	systemPrompt = '',
@@ -745,39 +751,42 @@ export const anthropicChatCompletion = wrapAI('claude-sonnet-4-6', async ({
 	systemPrompt?: string;
 	sessionId?: string;
 }) => {
-	const openai = new OpenAI({
-		apiKey: process.env.PIONEER_API_KEY,
-		baseURL: 'https://api.pioneer.ai/v1',
+	const anthropic = new Anthropic({
+		apiKey: process.env.ANTHROPIC_API_KEY,
 	});
-	const client = observeOpenAI(openai);
-	const chatMessages: ChatCompletionMessageParam[] = systemPrompt
-		? [{ role: 'system', content: systemPrompt } as ChatCompletionMessageParam, ...messages]
-		: messages;
+	const systemMessages = messages.filter(m => m.role === 'system');
+	const nonSystemMessages = messages.filter(m => m.role !== 'system');
+	const combinedSystem = [
+		systemPrompt,
+		...systemMessages.map(m => typeof m.content === 'string' ? m.content : JSON.stringify(m.content)),
+	].filter(Boolean).join('\n\n');
+	const anthropicMessages: Anthropic.MessageParam[] = nonSystemMessages.map(m => ({
+		role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+		content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+	}));
 	try {
-		const response = await client.chat.completions.create({
+		const response = await anthropic.messages.create({
 			model,
-			messages: chatMessages,
+			messages: anthropicMessages,
+			...(combinedSystem ? { system: combinedSystem } : {}),
 			temperature,
 			max_tokens,
-			...(sessionId ? { observationOptions: { session: sessionId } } : {}),
 		});
-		const content = response.choices[0].message?.content?.trim() || '';
+		const block = response.content[0];
+		const content = block?.type === 'text' ? block.text.trim() : '';
 		return content;
 	} catch (error: unknown) {
 		console.error('Error in anthropicChatCompletion:', error);
 		throw new Error(
-		typeof error === 'object' && error !== null && 'response' in error
-			// @ts-expect-error: error shape from OpenAI SDK
-			? error?.response?.data?.error?.message || 'Pioneer AI API error'
-			: (error as Error).message || 'Pioneer AI API error'
+			error instanceof Error ? error.message : 'Anthropic API error'
 		);
 	}
-}, { model: 'claude-sonnet-4-6', provider: 'claude' });
+}, { model: 'claude-sonnet-4-20250514', provider: 'claude' });
 
 /**
- * Primary AI completion function. Both paths now use Claude via Pioneer AI.
+ * Primary AI completion function. Both paths now use Claude via the Anthropic API directly.
  * The AI_PROVIDER env var is kept for routing flexibility but both resolve
- * to the same Pioneer AI + Claude backend.
+ * to the same Anthropic Claude backend.
  */
 export const openaiChatCompletion = process.env.AI_PROVIDER === 'anthropic'
 	? anthropicChatCompletion
