@@ -111,7 +111,7 @@ CRITICAL: Check if any downstream APIs might need fields from the current respon
 For example, if a "delete watchlist" API requires "pokemon_id", then pokemon_id must be preserved from the "get watchlist" response.`;
     }
 
-    const prompt = `You are an expert at extracting useful information from API responses to help answer user queries.
+    const systemInstruction = `You are an expert at extracting useful information from API responses to help answer user queries.
 
 Given the original user query, the refined query, and the final deliverable generated so far,
 extract any useful data points, facts, or details from the API responses that could aid in answering the user's question.
@@ -129,7 +129,7 @@ FIELD PRESERVATION RULES (CRITICAL):
 - ALWAYS preserve status fields (deleted, active, success, etc.)
 - ALWAYS preserve timestamps (created_at, updated_at, etc.) if they might be relevant
 - When in doubt, KEEP the field rather than removing it
-- Check the available APIs context to see if any downstream operations might need specific fields
+- Check the available APIs context to see if any downstream APIs might need specific fields
 
 FACTUAL REPORTING ONLY:
 - Report ONLY what the API response explicitly states (e.g., "3 items were deleted", "ID 123 was created")
@@ -144,9 +144,9 @@ Structure the extracted data to preserve relationships. For list responses, main
 - For single objects, preserve all important fields
 - Use clear labels to indicate what each piece of data represents
 
-If no new useful data is found, return the existing useful data as is.
+If no new useful data is found, return the existing useful data as is.`;
 
-Refined User Query: ${refinedQuery}
+    const userMessage = `Refined User Query: ${refinedQuery}
 Final Deliverable: ${finalDeliverable}
 Existing Useful Data: ${existingUsefulData}
 API Response: ${apiResponse}${schemaContext}${availableApisContext}
@@ -154,7 +154,10 @@ API Response: ${apiResponse}${schemaContext}${availableApisContext}
 Extracted Useful Data: `;
 
     const extractedData = await kimiChatCompletion({
-      messages: [{ role: 'system', content: prompt }],
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: userMessage },
+      ],
       temperature: 0.5,
       max_tokens: 4096,
     });

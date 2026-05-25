@@ -15,7 +15,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { streamText } from 'ai';
+import { streamText, type ModelMessage } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { ChatStreamRequestSchema } from '@/schemas/ai';
 import { edStartTrace, edEndTrace } from '@/ed_workflows';
@@ -139,21 +139,16 @@ const anthropicFinalAnswer = wrapAI(
   async ({
     userContent,
     apiKey,
+    messages,
   }: {
     userContent: string;
     apiKey: string;
+    messages: ModelMessage[];
   }): Promise<{ text: string; tokens: number }> => {
     const provider = createAnthropic({ apiKey });
     const { textStream, usage } = streamText({
       model: provider('claude-sonnet-4-5-20250929'),
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant. Synthesise the execution result into a clear, concise answer for the user.',
-        },
-        { role: 'user', content: userContent },
-      ],
+      messages,
     });
 
     let text = '';
@@ -190,7 +185,15 @@ async function streamFinalAnswer(
     ? `Question: ${refinedQuery}\n\nData collected:\n${usefulData}\n\nExecution result: ${executorMessage}`
     : `Question: ${refinedQuery}\n\nExecution result: ${executorMessage}`;
 
-  const { text, tokens } = await anthropicFinalAnswer({ userContent, apiKey: anthropicApiKey });
+  const messages: ModelMessage[] = [
+    {
+      role: 'system',
+      content:
+        'You are a helpful assistant. Synthesise the execution result into a clear, concise answer for the user.',
+    },
+    { role: 'user', content: userContent },
+  ];
+  const { text, tokens } = await anthropicFinalAnswer({ userContent, apiKey: anthropicApiKey, messages });
 
   const fullText = executedStepsSummary ? `${text}\n\n---\n\n${executedStepsSummary}` : text;
   writeTextDelta(controller, fullText);
