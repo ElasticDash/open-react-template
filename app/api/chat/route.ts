@@ -227,13 +227,10 @@ async function chatHandler(
             const pendingData = pendingPlans.get(sessionId)!;
             pendingPlans.delete(sessionId); // Remove from pending
             
-            const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-            if (!apiKey) {
-              return NextResponse.json(
-                { error: 'OpenAI API key not configured' },
-                { status: 500 }
-              );
-            }
+            // Legacy plumbing — downstream chat-completion calls now route
+            // through Anthropic via aiHandler. Kept as an empty-string
+            // passthrough so callee signatures don't churn.
+            const apiKey = '';
 
             // Execute the approved plan
             if (pendingData.plan.execution_plan && pendingData.plan.execution_plan.length > 0) {
@@ -315,14 +312,10 @@ async function chatHandler(
             );
           }
 
-          const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-          if (!apiKey) {
-            output = { error: 'OpenAI API key not configured' };
-            return NextResponse.json(
-              output,
-              { status: 500 }
-            );
-          }
+          // Legacy plumbing — downstream chat-completion calls now route
+          // through Anthropic via aiHandler. Kept as an empty-string passthrough
+          // so callee signatures don't churn.
+          const apiKey = '';
 
           // userMessage already extracted above for approval check
           if (!userMessage) {

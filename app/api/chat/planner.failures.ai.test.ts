@@ -90,10 +90,9 @@ aiTest('[EXPECTED FAIL] sendToPlanner: output semantically addresses SPEED stat'
   })
 
   await expect(ctx.trace).toMatchSemanticOutput('speed of Pikachu as the final deliverable', {
-    provider: 'openai',
-    model: 'kimi-k2-turbo-preview',
-    apiKey: process.env.KIMI_API_KEY,
-    baseURL: 'https://api.moonshot.ai/v1',
+    provider: 'claude',
+    model: 'claude-sonnet-4-5-20250929',
+    apiKey: process.env.ANTHROPIC_API_KEY,
   })
 
 })

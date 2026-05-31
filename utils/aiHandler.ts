@@ -1,5 +1,4 @@
 // --- Agentic Tool Definitions ---
-import OpenAI from 'openai';
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,11 +17,20 @@ try {
   // Not in elasticdash context — passthrough stub remains active
 }
 import { NodeSDK } from "@opentelemetry/sdk-node";
-import { observeOpenAI } from "@langfuse/openai";
 import { LangfuseSpanProcessor } from "@langfuse/otel";
 import { LangfuseObservation, LangfuseSpan, LangfuseTool } from "@langfuse/tracing";
 import { startActiveObservation } from "@langfuse/tracing";
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+
+/**
+ * Local chat-message type. Replaces the prior `ChatCompletionMessageParam`
+ * import from the `openai` SDK so this module has no OpenAI dependency.
+ */
+export type ChatMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+/** Backwards-compatible alias for call sites that still import the old name. */
+export type ChatCompletionMessageParam = ChatMessage;
 import {
   apiService,
   // checkApprovalStatus,
@@ -605,112 +613,13 @@ try {
   // non-fatal, tool functions still work without telemetry.
 }
 
-export const kimiChatCompletion = wrapAI('kimi-k2', async ({
-	messages,
-	model = 'kimi-k2-turbo-preview',
-	temperature = 0.0,
-	max_tokens = 4096,
-	systemPrompt = '',
-	sessionId,
-}: {
-	messages: ChatCompletionMessageParam[];
-	model?: string;
-	temperature?: number;
-	max_tokens?: number;
-	systemPrompt?: string;
-  	sessionId?: string;
-}) => {
-	model = 'kimi-k2-turbo-preview';
-	const openai = new OpenAI({
-		apiKey: process.env.KIMI_API_KEY,
-		baseURL: "https://api.moonshot.ai/v1",
-	});
-	const client = observeOpenAI(openai);
-	const chatMessages: ChatCompletionMessageParam[] = systemPrompt
-		? [{ role: 'system', content: systemPrompt } as ChatCompletionMessageParam, ...messages]
-		: messages;
-	let response;
-	try {
-		response = await client.chat.completions.create({
-			model,
-			messages: chatMessages,
-			temperature,
-			max_tokens,
-			...(sessionId ? { observationOptions: { session: sessionId } } : {}),
-		});
-		const content = response.choices[0].message?.content?.trim() || '';
-		return content;
-	} catch (error: unknown) {
-		console.error('Error in kimiChatCompletion:', error);
-		console.error('Related response: ', response);
-		throw new Error(
-		typeof error === 'object' && error !== null && 'response' in error
-			// @ts-expect-error: error shape from OpenAI SDK
-			? error?.response?.data?.error?.message || 'Kimi OpenAI API error'
-			: (error as Error).message || 'Kimi OpenAI API error'
-		);
-	}
-}, { model: 'kimi-k2-turbo-preview', provider: 'kimi' });
-
 /**
- * Calls the OpenAI Chat Completion API with the provided parameters.
- * Ensures type safety for message objects.
+ * Calls the Anthropic Claude API via the Vercel AI SDK.
+ * Always uses Claude Sonnet 4.5 — caller-supplied `model` is ignored so we
+ * cannot accidentally forward an OpenAI/Kimi model id (e.g. `gpt-4o`) and
+ * receive a 4xx from Anthropic.
  *
  * @param messages - Array of chat messages
- * @param model - Model name (default: gpt-4o)
- * @param temperature - Sampling temperature (default: 0.0)
- * @param max_tokens - Maximum tokens in response (default: 256)
- * @param systemPrompt - Optional system prompt to prepend
- * @param sessionId - Session ID for Langfuse observation
- * @returns The trimmed content of the first response message
- * @throws Error if the OpenAI API call fails
- */
-export const openaiChatCompletionOriginal = wrapAI('gpt-4o', async ({
-	messages,
-	model = 'gpt-4o',
-	temperature = 0.0,
-	max_tokens = 256,
-	systemPrompt = '',
-	sessionId,
-}: {
-	messages: ChatCompletionMessageParam[];
-	model?: string;
-	temperature?: number;
-	max_tokens?: number;
-	systemPrompt?: string;
-	sessionId?: string;
-}) => {
-	const openai = new OpenAI({ apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY });
-	const client = observeOpenAI(openai);
-	const chatMessages: ChatCompletionMessageParam[] = systemPrompt
-		? [{ role: 'system', content: systemPrompt } as ChatCompletionMessageParam, ...messages]
-		: messages;
-	try {
-		const response = await client.chat.completions.create({
-			model,
-			messages: chatMessages,
-			temperature,
-			max_tokens,
-			...(sessionId ? { observationOptions: { session: sessionId } } : {}),
-		});
-		const content = response.choices[0].message?.content?.trim() || '';
-		return content;
-	} catch (error: unknown) {
-		throw new Error(
-		typeof error === 'object' && error !== null && 'response' in error
-			// @ts-expect-error: error shape from OpenAI SDK
-			? error?.response?.data?.error?.message || 'OpenAI API error'
-			: (error as Error).message || 'OpenAI API error'
-		);
-	}
-}, { model: 'gpt-4o', provider: 'openai' });
-
-/**
- * Calls the Anthropic Claude API via the Vercel AI SDK with the same
- * interface as openaiChatCompletionOriginal. Uses Claude Sonnet 4.5.
- *
- * @param messages - Array of chat messages
- * @param model - Model name (default: claude-sonnet-4-5-20250929)
  * @param temperature - Sampling temperature (default: 0.0)
  * @param max_tokens - Maximum tokens in response (default: 256)
  * @param systemPrompt - Optional system prompt to prepend
@@ -720,20 +629,25 @@ export const openaiChatCompletionOriginal = wrapAI('gpt-4o', async ({
  */
 export const anthropicChatCompletion = wrapAI('claude-sonnet-4-5', async ({
 	messages,
-	model = 'claude-sonnet-4-5-20250929',
 	temperature = 0.0,
 	max_tokens = 256,
 	systemPrompt = '',
 	sessionId: _sessionId,
+	// `model` is accepted for interface compatibility with prior OpenAI/Kimi
+	// call sites but intentionally ignored — Anthropic only accepts its own
+	// model ids, and we force claude-sonnet-4-5-20250929.
+	model: _model,
 }: {
-	messages: ChatCompletionMessageParam[];
+	messages: ChatMessage[];
 	model?: string;
 	temperature?: number;
 	max_tokens?: number;
 	systemPrompt?: string;
 	sessionId?: string;
 }) => {
-	void _sessionId; // kept for interface compatibility with openaiChatCompletion
+	void _sessionId;
+	void _model;
+	const ANTHROPIC_MODEL = 'claude-sonnet-4-5-20250929';
 	const apiKey = process.env.ANTHROPIC_API_KEY;
 	if (!apiKey) {
 		throw new Error('ANTHROPIC_API_KEY is not configured');
@@ -745,7 +659,7 @@ export const anthropicChatCompletion = wrapAI('claude-sonnet-4-5', async ({
 
 	try {
 		const result = await generateText({
-			model: provider(model),
+			model: provider(ANTHROPIC_MODEL),
 			messages: chatMessages,
 			temperature,
 			maxOutputTokens: max_tokens,
@@ -760,11 +674,11 @@ export const anthropicChatCompletion = wrapAI('claude-sonnet-4-5', async ({
 }, { model: 'claude-sonnet-4-5-20250929', provider: 'anthropic' });
 
 /**
- * Dispatches to openaiChatCompletionOriginal or anthropicChatCompletion
- * based on the AI_PROVIDER env var. Defaults to 'openai' if not set.
+ * Backwards-compatible aliases for legacy call sites. The OpenAI and
+ * Kimi/Moonshot clients have been removed; every chat completion now
+ * resolves to Anthropic Claude Sonnet 4.5 (see `anthropicChatCompletion`).
  */
-export const openaiChatCompletion = process.env.AI_PROVIDER === 'anthropic'
-	? anthropicChatCompletion
-	: openaiChatCompletionOriginal;
+export const openaiChatCompletion = anthropicChatCompletion;
+export const kimiChatCompletion = anthropicChatCompletion;
 
 // Agentic flow orchestration logic is now available for extension

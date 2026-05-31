@@ -217,15 +217,11 @@ export async function POST(request: NextRequest): Promise<Response> {
   const edRunId = request.headers.get('x-elasticdash-run-id');
   const edServer = request.headers.get('x-elasticdash-server');
 
-  const aiProvider = process.env.AI_PROVIDER || 'openai';
-
-  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? '';
-  if (aiProvider === 'openai' && !apiKey) {
-    return new Response(JSON.stringify({ error: 'OpenAI API key not configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  // Legacy plumbing — chat-completion calls downstream are routed through
+  // Anthropic regardless of this value. Kept as an empty-string passthrough so
+  // the callee signatures (summarizeMessages, runPlannerWithInputs, etc.) do
+  // not need to change.
+  const apiKey = '';
 
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicApiKey) {

@@ -187,19 +187,28 @@ IntentType: ["FETCH"/"MODIFY"]`;
   });
   console.log('Validator Response 2:', content);
 
-  const refinedQueryMatch = content.match(/Refined Query: (.+)\nLanguage:/);
-  const languageMatch = content.match(/Language: (.+)\nConcepts:/);
-  const conceptsMatch = content.match(/Concepts: \[(.+)\]\nAPI Needs:/);
-  const apiNeedsMatch = content.match(/API Needs: \[(.+)\]\nEntities:/);
-  const entitiesMatch = content.match(/Entities: \[(.+)\]\nIntentType:/);
-  const intentTypeMatch = content.match(/IntentType: (.+)/);
+  // Per-line, blank-line-tolerant matches.
+  // The previous patterns required a single `\n` between sections (e.g. `\nLanguage:`),
+  // but the model frequently emits blank lines between sections (`\n\n`). That made every
+  // regex return null and the fallback used the raw `userInput` — which on multi-turn
+  // requests contains the prepended `Previous context:` blob from prior assistant turns.
+  // The polluted refinedQuery/entities then leaked into the planner, RAG entity matching,
+  // and the final-answer synthesizer (producing cross-turn comparison answers).
+  const refinedQueryMatch = content.match(/^\s*Refined Query:\s*(.+?)\s*$/m);
+  const languageMatch     = content.match(/^\s*Language:\s*(.+?)\s*$/m);
+  const conceptsMatch     = content.match(/^\s*Concepts:\s*\[(.*?)\]\s*$/m);
+  const apiNeedsMatch     = content.match(/^\s*API Needs:\s*\[(.*?)\]\s*$/m);
+  const entitiesMatch     = content.match(/^\s*Entities:\s*\[(.*?)\]\s*$/m);
+  const intentTypeMatch   = content.match(/^\s*IntentType:\s*["']?(FETCH|MODIFY)["']?\s*$/im);
 
-  const refinedQuery = refinedQueryMatch ? refinedQueryMatch[1].trim() : userInput;
+  // Fallback uses `currentQuery` (this-turn user input, extracted at line 26)
+  // — NOT `userInput`, which may contain prior-turn assistant context.
+  const refinedQuery = refinedQueryMatch ? refinedQueryMatch[1].trim() : currentQuery;
   const language = languageMatch ? languageMatch[1].trim() : 'EN';
-  const concepts = conceptsMatch ? conceptsMatch[1].split(',').map((c: any) => c.trim()) : [];
-  const apiNeeds = apiNeedsMatch ? apiNeedsMatch[1].split(',').map((a: any) => a.trim()) : [];
-  const entities = entitiesMatch ? entitiesMatch[1].split(',').map((e: any) => e.trim().replace(/['"]/g, '')) : [userInput];
-  const intentType = intentTypeMatch ? intentTypeMatch[1].trim() as "FETCH" | "MODIFY" : "FETCH";
+  const concepts = conceptsMatch ? conceptsMatch[1].split(',').map((c: string) => c.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean) : [];
+  const apiNeeds = apiNeedsMatch ? apiNeedsMatch[1].split(',').map((a: string) => a.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean) : [];
+  const entities = entitiesMatch ? entitiesMatch[1].split(',').map((e: string) => e.trim().replace(/['"]/g, '')).filter(Boolean) : [currentQuery];
+  const intentType: "FETCH" | "MODIFY" = intentTypeMatch ? (intentTypeMatch[1].toUpperCase() as "FETCH" | "MODIFY") : "FETCH";
 
   // Reference task reuse is disabled (no backend storage)
   const referenceTask: SavedTask | undefined = undefined;

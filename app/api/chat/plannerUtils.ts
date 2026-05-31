@@ -212,10 +212,9 @@ export async function resolvePlaceholders(
     return { resolved: false, reason };
   }
 
-  const apiKey_local = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-  if (!apiKey_local) return { resolved: false, reason: 'OpenAI API key not configured' };
-
-  // Inline import to avoid circular deps
+  // OpenAI key check removed — `openaiChatCompletion` now routes through
+  // Anthropic via aiHandler and validates ANTHROPIC_API_KEY at call time.
+  // Inline import to avoid circular deps.
   const { openaiChatCompletion } = await import('@/utils/aiHandler');
 
   try {

@@ -84,10 +84,9 @@ aiTest('[EXPECTED FAIL] sendToPlanner returns a plan for a simple goal', async (
   await expect(ctx.trace).toMatchSemanticOutput('defense of Pikachu as the final deliverable', { provider: 'claude', model: 'claude-sonnet-4-6' })
   await expect(ctx.trace).toMatchSemanticOutput('attack of Pikachu as the final deliverable', { provider: 'claude', model: 'claude-sonnet-4-5-20250929' })
   await expect(ctx.trace).toMatchSemanticOutput('attack of Pikachu as the final deliverable', {
-    provider: 'openai',
-    model: 'kimi-k2-turbo-preview',
-    apiKey: process.env.KIMI_API_KEY,
-    baseURL: 'https://api.moonshot.ai/v1',
+    provider: 'claude',
+    model: 'claude-sonnet-4-5-20250929',
+    apiKey: process.env.ANTHROPIC_API_KEY,
   })
 })
 
