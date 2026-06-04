@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  elasticdash-test: 0.1.24
+  elasticdash-test: file:/Users/jiangjiahao/Documents/GitHub/elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz
 
 importers:
 
@@ -54,8 +54,8 @@ importers:
         specifier: ^17.4.2
         version: 17.4.2
       elasticdash-test:
-        specifier: 0.1.24
-        version: 0.1.24
+        specifier: file:/Users/jiangjiahao/Documents/GitHub/elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz
+        version: file:../elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz
       next:
         specifier: ^15.5.15
         version: 15.5.15(@opentelemetry/api@1.9.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1381,8 +1381,9 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  elasticdash-test@0.1.24:
-    resolution: {integrity: sha512-tyn7l5jcimPx3Yeccxrz4txH4mwv2qbd1DjIrULjXTrkISCKR4lomTqxYz1Ubrpv+sE/tGqmoBhmEHyM36kYAw==}
+  elasticdash-test@file:../elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz:
+    resolution: {integrity: sha512-3RSoS1WYRGdq3iSIuGs6WYS2/UQlnQvUtAEXbSu2vxuVmSy+hdHvYTQBspPgpUOvwfPk/Fgno0PQM6T/9/CScQ==, tarball: file:../elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz}
+    version: 0.1.26-hotfix-1
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -3660,7 +3661,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  elasticdash-test@0.1.24:
+  elasticdash-test@file:../elasticdash-test-js/elasticdash-test-0.1.26-hotfix-1.tgz:
     dependencies:
       chalk: 5.6.2
       chokidar: 5.0.0
