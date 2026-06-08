@@ -1,11 +1,11 @@
 {
   "mcpServers": {
     "elasticdash-mcp": {
-      "command": "/Users/jiangjiahao/.nvm/versions/node/v20.20.0/bin/node",
-      "args": ["--import", "tsx", "/Users/jiangjiahao/Documents/GitHub/ElasticDash-MCP/mcp-server/server.ts"],
-      "cwd": "/Users/jiangjiahao/Documents/GitHub/ElasticDash-MCP",
+      "command": "npx",
+      "args": ["elasticdash-mcp"],
       "env": {
-        "ELASTICDASH_PROJECT_CWD": "/Users/jiangjiahao/Documents/GitHub/open-react-template"
+        "ELASTICDASH_API_URL": "https://devserver.elasticdash.com",
+        "ELASTICDASH_API_KEY": "ed_3a3a82b37f8d0413d29e8ee4fcda3716d85e6629451d881b29fb07f3b9690960"
       }
     }
   }
