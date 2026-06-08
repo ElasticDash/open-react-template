@@ -1,2 +1,2 @@
 overrides:
-  elasticdash-test: file:/Users/jiangjiahao/Documents/GitHub/elasticdash-test-js/elasticdash-test-0.1.27.tgz
+  elasticdash-test: ^0.1.27
