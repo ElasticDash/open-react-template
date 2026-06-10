@@ -14,10 +14,10 @@ const nextConfig = {
     '@grpc/grpc-js',
     '@langfuse/otel',
     '@langfuse/tracing',
-    'elasticdash-test',
-    'elasticdash-test/http',
-    'elasticdash-test/observability',
-    'elasticdash-test/portal',
+    'elasticdash-sdk',
+    'elasticdash-sdk/http',
+    'elasticdash-sdk/observability',
+    'elasticdash-sdk/portal',
   ],
 };
 

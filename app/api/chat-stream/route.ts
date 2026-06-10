@@ -36,7 +36,7 @@ import { detectResolutionVsExecution } from '../chat/validators';
 import { runPlannerWithInputs } from '../chat/plannerUtils';
 import { executeIterativePlanner } from '../chat/executor';
 import { queryRefinement } from '@/ed_tools';
-// Use the real wrapAI from elasticdash-test so anthropicFinalAnswer pushes telemetry.
+// Use the real wrapAI from elasticdash-sdk so anthropicFinalAnswer pushes telemetry.
 // eval('require') bypasses Turbopack's static analysis (which shows "Module not found"
 // for serverExternalPackages and replaces require with an error stub at runtime).
 // Node.js resolves the package natively at runtime.
@@ -45,8 +45,8 @@ import { queryRefinement } from '@/ed_tools';
 let wrapAI: WrapAIFn = (_name: string, fn: any) => fn;
 try {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  wrapAI = (eval('require') as (id: string) => any)('elasticdash-test').wrapAI ?? wrapAI;
-} catch { /* elasticdash-test not available — passthrough stub remains active */ }
+  wrapAI = (eval('require') as (id: string) => any)('elasticdash-sdk').wrapAI ?? wrapAI;
+} catch { /* elasticdash-sdk not available — passthrough stub remains active */ }
 import { startActiveObservation } from '@langfuse/tracing';
 import type { LangfuseSpan } from '@langfuse/tracing';
 import { writeTextDelta, writeFinishStep, writeFinishMessage, writeMessageStart, writeError, writeResult, writeStatus, writePlan } from '@/utils/aiDataStream';
@@ -724,7 +724,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           // ALS store is inherited through startActiveObservation's internal als.run().
           // eval('require') bypasses Turbopack's static "Module not found" stub.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { runWithInitializedHttpContext } = (eval('require') as (id: string) => any)('elasticdash-test');
+          const { runWithInitializedHttpContext } = (eval('require') as (id: string) => any)('elasticdash-sdk');
           await runWithInitializedHttpContext(edRunId, edServer, doWork);
         } catch {
           await doWork();

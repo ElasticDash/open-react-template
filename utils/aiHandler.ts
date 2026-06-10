@@ -3,16 +3,16 @@ import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WrapAIFn = <T extends (...args: any[]) => any>(name: string, fn: T, options?: { model?: string; provider?: string }) => T;
-// Use the real wrapAI from elasticdash-test (supports AI mocking and auto-telemetry).
+// Use the real wrapAI from elasticdash-sdk (supports AI mocking and auto-telemetry).
 // Falls back to a passthrough stub if the package is unavailable at runtime.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wrapAI: WrapAIFn = (_name: string, fn: any) => fn;
 try {
   // eval('require') bypasses Turbopack's static analysis which shows "Module not found"
   // for serverExternalPackages entries and replaces require() with an error stub at runtime.
-  // Node.js resolves elasticdash-test natively via the CJS export (dist/index.cjs).
+  // Node.js resolves elasticdash-sdk natively via the CJS export (dist/index.cjs).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  wrapAI = (eval('require') as (id: string) => any)('elasticdash-test').wrapAI ?? wrapAI;
+  wrapAI = (eval('require') as (id: string) => any)('elasticdash-sdk').wrapAI ?? wrapAI;
 } catch {
   // Not in elasticdash context — passthrough stub remains active
 }
@@ -334,7 +334,7 @@ export function resolveTaskInput(
     if (Array.isArray(val)) return val.map(deepResolve);
     if (typeof val === 'object' && val !== null) {
       const obj = val as Record<string, unknown>;
-      // Support elasticdash-test's { $ref: "taskId.output.path" } object format
+      // Support elasticdash-sdk's { $ref: "taskId.output.path" } object format
       if (typeof obj['$ref'] === 'string') {
         const ref = obj['$ref'] as string;
         const parts = ref.split('.');

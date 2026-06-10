@@ -1,4 +1,4 @@
-import { expect } from 'elasticdash-test'
+import { expect } from 'elasticdash-sdk'
 import { sendToPlanner } from './planner'
 
 aiTest('sendToPlanner calls prompts in the correct order for a FETCH goal', async (ctx) => {

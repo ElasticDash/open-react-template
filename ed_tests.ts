@@ -10,7 +10,7 @@
  * Generated from trace analysis on 2026-04-19.
  */
 
-import { defineTest } from 'elasticdash-test';
+import { defineTest } from 'elasticdash-sdk';
 
 const TRACE = './.ed_traces/2026-04-19T06-54-40_32b4.json';
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3006';

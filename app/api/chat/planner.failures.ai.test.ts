@@ -1,7 +1,7 @@
 /**
  * Intentionally failing tests for sendToPlanner.
  *
- * Purpose: verify that the elasticdash-test framework correctly identifies
+ * Purpose: verify that the elasticdash-sdk framework correctly identifies
  * individual test failures without contaminating passing tests in the same run.
  *
  * Structure:
@@ -10,7 +10,7 @@
  *
  * Each failing test includes a comment explaining exactly why it will fail.
  */
-import { expect } from 'elasticdash-test'
+import { expect } from 'elasticdash-sdk'
 import { sendToPlanner } from './planner'
 
 /** Shared query used across all tests in this file. */
@@ -182,7 +182,7 @@ aiTest('[EXPECTED PASS] sendToPlanner: Kimi intent analysis returns FETCH for a 
 /**
  * WHY IT PASSES: This test makes only correct, verifiable assertions.
  * Its presence in the same file as the 6 failing tests verifies that the
- * elasticdash-test framework isolates individual test results — a file with
+ * elasticdash-sdk framework isolates individual test results — a file with
  * mixed pass/fail tests should report each test independently, not mark the
  * entire file as failed.
  */

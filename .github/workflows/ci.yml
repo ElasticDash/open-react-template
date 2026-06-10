@@ -28,7 +28,7 @@ jobs:
           cache: pnpm
 
       - name: Remove local-only dependencies
-        run: node -e "const p=require('./package.json'); delete p.dependencies['elasticdash-test']; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n')"
+        run: node -e "const p=require('./package.json'); delete p.dependencies['elasticdash-sdk']; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -80,8 +80,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install elasticdash-test globally
-        run: npm install -g elasticdash-test@beta
+      - name: Install elasticdash-sdk globally
+        run: npm install -g elasticdash-sdk@beta
 
       - name: Build Next.js app
         run: pnpm build

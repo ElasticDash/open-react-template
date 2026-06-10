@@ -41,7 +41,7 @@ import { WrapAIFn } from '@/utils/aiHandler';
 
 // ---------------------------------------------------------------------------
 // wrapAI — loaded via eval('require') to bypass Turbopack static analysis.
-// Falls back to a passthrough stub if elasticdash-test is unavailable.
+// Falls back to a passthrough stub if elasticdash-sdk is unavailable.
 // NOTE: This is a SEPARATE eval('require') from the one in ed_tools.ts,
 // which means it may resolve to a different module instance with its own ALS.
 // This is Failure Mode 3 (module instance ALS split).
@@ -50,8 +50,8 @@ import { WrapAIFn } from '@/utils/aiHandler';
 let wrapAI: WrapAIFn = (_name: string, fn: any) => fn;
 try {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  wrapAI = (eval('require') as (id: string) => any)('elasticdash-test').wrapAI ?? wrapAI;
-} catch { /* elasticdash-test not available — passthrough stub remains active */ }
+  wrapAI = (eval('require') as (id: string) => any)('elasticdash-sdk').wrapAI ?? wrapAI;
+} catch { /* elasticdash-sdk not available — passthrough stub remains active */ }
 
 // ---------------------------------------------------------------------------
 // wrapAI-wrapped NON-streaming Claude call (Failure Mode 1+2).
@@ -123,11 +123,11 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (edRunId && edServer) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { initHttpRunContext } = (eval('require') as (id: string) => any)('elasticdash-test');
+      const { initHttpRunContext } = (eval('require') as (id: string) => any)('elasticdash-sdk');
       await initHttpRunContext(edRunId, edServer);
       // ALS is alive HERE — but will be dead inside start() below.
     } catch {
-      // elasticdash-test not available — proceed without dashboard context
+      // elasticdash-sdk not available — proceed without dashboard context
     }
   }
 

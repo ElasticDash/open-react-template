@@ -14,7 +14,7 @@
 
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3001';
 
-// The elasticdash-test module must be loaded via eval('require') to share
+// The elasticdash-sdk module must be loaded via eval('require') to share
 // the same CJS module instance as wrapTool/wrapAI (loaded in ed_tools.ts
 // and route files). Using import() creates a separate ESM instance with
 // separate ALS stores, causing tool events to be invisible to startTrace.
@@ -25,8 +25,8 @@ const APP_URL = process.env.APP_URL ?? 'http://localhost:3001';
 let _ed: any = null;
 
 /**
- * Set the elasticdash-test module reference. Call this from a file where
- * eval('require')('elasticdash-test') succeeds (e.g. ed_tools.ts).
+ * Set the elasticdash-sdk module reference. Call this from a file where
+ * eval('require')('elasticdash-sdk') succeeds (e.g. ed_tools.ts).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function setElasticDashModule(mod: any): void {

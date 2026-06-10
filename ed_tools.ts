@@ -10,23 +10,23 @@ import {
 import { clarifyAndRefineUserInput } from "./utils/queryRefinement";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WrapToolFn = <T extends (...args: any[]) => any>(name: string, fn: T) => T;
-// Use the real wrapTool from elasticdash-test (supports tool mocking and auto-telemetry).
+// Use the real wrapTool from elasticdash-sdk (supports tool mocking and auto-telemetry).
 // Falls back to a passthrough stub if the package is unavailable at runtime.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wrapTool: WrapToolFn = (_name: string, fn: any) => fn;
 try {
   // eval('require') bypasses Turbopack's static analysis which shows "Module not found"
   // for serverExternalPackages entries and replaces require() with an error stub at runtime.
-  // Node.js resolves elasticdash-test natively via the CJS export (dist/index.cjs).
+  // Node.js resolves elasticdash-sdk natively via the CJS export (dist/index.cjs).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const _edModule = (eval('require') as (id: string) => any)('elasticdash-test');
+  const _edModule = (eval('require') as (id: string) => any)('elasticdash-sdk');
   wrapTool = _edModule.wrapTool ?? wrapTool;
   // Share the CJS module instance with ed_workflows.ts so startTrace/endTrace
   // use the same ALS stores as wrapTool/wrapAI.
   setElasticDashModule(_edModule);
-  console.log('[ed_tools] elasticdash-test loaded, setElasticDashModule called');
+  console.log('[ed_tools] elasticdash-sdk loaded, setElasticDashModule called');
 } catch (err) {
-  console.error('[ed_tools] Failed to load elasticdash-test:', err);
+  console.error('[ed_tools] Failed to load elasticdash-sdk:', err);
 }
 
 // export const checkApprovalStatus = wrapTool('checkApprovalStatus', async (input: any) => {

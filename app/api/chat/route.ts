@@ -34,7 +34,7 @@ import { generateFinalAnswer, executeIterativePlanner } from './executor';
 import { queryRefinement } from '@/ed_tools';
 import { edStartTrace, edEndTrace } from '@/ed_workflows';
 // setHttpRunContext is loaded via dynamic import inside the handler to avoid
-// a static reference to elasticdash-test which cannot be resolved by Turbopack
+// a static reference to elasticdash-sdk which cannot be resolved by Turbopack
 // at build time (serverExternalPackages handles dynamic imports at runtime).
 
 const chatHandlerWrapper = async (request: NextRequest) => {
@@ -48,10 +48,10 @@ const chatHandlerWrapper = async (request: NextRequest) => {
       // via enterWith() so wrapTool/wrapAI calls can push telemetry to the dashboard.
       // eval('require') bypasses Turbopack's static "Module not found" stub.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { initHttpRunContext } = (eval('require') as (id: string) => any)('elasticdash-test');
+      const { initHttpRunContext } = (eval('require') as (id: string) => any)('elasticdash-sdk');
       await initHttpRunContext(edRunId, edServer);
     } catch {
-      // elasticdash-test not available — proceed without dashboard context
+      // elasticdash-sdk not available — proceed without dashboard context
     }
   }
 

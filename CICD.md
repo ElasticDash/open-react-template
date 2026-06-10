@@ -39,7 +39,7 @@ Uses `actions/setup-node@v4` with Node.js 20 and enables pnpm caching for faster
 
 #### 4. Install Dependencies
 
-Runs `pnpm install --no-frozen-lockfile` to install project dependencies. The `--no-frozen-lockfile` flag is used because the `elasticdash-test` dependency references a local file path (`file:../elasticdash-test-js`) that does not exist in the CI environment.
+Runs `pnpm install --no-frozen-lockfile` to install project dependencies. The `--no-frozen-lockfile` flag is used because the `elasticdash-sdk` dependency references a local file path (`file:../elasticdash-sdk-js`) that does not exist in the CI environment.
 
 #### 5. Run Unit Tests
 
@@ -57,9 +57,9 @@ Uses `actions/checkout@v4` to clone the repository (needed for `ed_tools.ts` and
 
 Uses `actions/setup-node@v4` with Node.js 20.
 
-#### 3. Install elasticdash-test
+#### 3. Install elasticdash-sdk
 
-Installs the `elasticdash-test` CLI globally from npm.
+Installs the `elasticdash-sdk` CLI globally from npm.
 
 #### 4. Run ElasticDash CI Tests
 
@@ -133,7 +133,7 @@ To enforce that both unit tests and AI tests must pass before merging, configure
 
 | Issue | Solution |
 |-------|---------|
-| `pnpm install` fails | The `elasticdash-test` local dependency (`file:../elasticdash-test-js`) does not exist in CI. The workflow strips it from `package.json` before install. If other dependencies fail, check the `pnpm-lock.yaml` is committed. |
+| `pnpm install` fails | The `elasticdash-sdk` local dependency (`file:../elasticdash-sdk-js`) does not exist in CI. The workflow strips it from `package.json` before install. If other dependencies fail, check the `pnpm-lock.yaml` is committed. |
 | Tests pass locally but fail in CI | Check for environment-specific code (file paths, env vars). CI runs on `ubuntu-latest` with Node.js 20. |
 | Workflow not triggering | Verify the branch name is `master` (not `main`). Check the workflow file is on the target branch. |
 | ElasticDash CI step fails with 401 | Check that `ELASTICDASH_API_URL` and `ELASTICDASH_API_KEY` secrets are configured in the repo. Verify the API key is active (not revoked) in the ElasticDash dashboard. |

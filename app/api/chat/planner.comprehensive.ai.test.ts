@@ -12,7 +12,7 @@
  *   8. No unresolved angle-bracket placeholders in result
  *   9. Schema validator prompt contains the generated plan as context
  */
-import { expect } from 'elasticdash-test'
+import { expect } from 'elasticdash-sdk'
 import { sendToPlanner } from './planner'
 
 /** Shared query used across all tests in this file. */
