@@ -28,7 +28,7 @@
     "aos": "3.0.0-beta.6",
     "axios": "^1.15.2",
     "dotenv": "^17.4.2",
-    "elasticdash-sdk": "link:../elasticdash-test-js",
+    "elasticdash-sdk": "^0.2.6",
     "next": "^15.5.15",
     "openai": "^6.34.0",
     "react": "19.2.3",
