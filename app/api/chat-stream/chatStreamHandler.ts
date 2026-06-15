@@ -88,8 +88,8 @@ async function _chatStreamHandlerImpl({
  * Callable wrapper around POST /api/chat-stream for use as an elasticdash
  * workflow function. Calls the live dev server via fetch.
  *
- * `recordToolCall` is called manually after completion rather than via `wrapTool`.
- * This avoids the `wrapTool` deduplication flag that would suppress inner tool
+ * `recordToolCall` is called manually after completion rather than via `edTool`.
+ * This avoids the `edTool` deduplication flag that would suppress inner tool
  * recordings (queryRefinement, apiService, etc.) during the pipeline execution.
  * Inner tools self-record via `safeRecordToolCall` in `ed_tools.ts`.
  *

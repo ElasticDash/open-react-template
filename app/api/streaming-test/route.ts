@@ -10,8 +10,8 @@
  * new context created by ReadableStream.start().
  *
  * Failure modes exercised:
- *   1+2  — ALS context loss: wrapTool / wrapAI calls inside start() see null ALS
- *   3    — Module instance split: initHttpRunContext loaded here vs wrapTool in ed_tools.ts
+ *   1+2  — ALS context loss: edTool / wrapAI calls inside start() see null ALS
+ *   3    — Module instance split: initHttpRunContext loaded here vs edTool in ed_tools.ts
  *          via separate eval('require') calls — potentially different ALS stores
  *   4+5  — wrapAI streaming incompatibility: streamText() returns ReadableStream,
  *          not Promise — wrapAI can't capture output or apply prompt mocks
@@ -147,10 +147,10 @@ export async function POST(request: NextRequest): Promise<Response> {
           writeStatus(controller, 'Searching Pokémon data…');
 
           // -----------------------------------------------------------------
-          // Failure Mode 1+2+3: wrapTool call inside start()
-          // searchPokemon is wrapTool-wrapped in ed_tools.ts.
-          // ALS is null here → wrapTool sees no context → telemetry dropped.
-          // With global fallback → wrapTool finds context → telemetry flows.
+          // Failure Mode 1+2+3: edTool call inside start()
+          // searchPokemon is edTool-wrapped in ed_tools.ts.
+          // ALS is null here → edTool sees no context → telemetry dropped.
+          // With global fallback → edTool finds context → telemetry flows.
           // -----------------------------------------------------------------
           const pokemonName = query.toLowerCase().includes('pikachu') ? 'pikachu' : 'ditto';
           const toolInput = { searchterm: pokemonName };

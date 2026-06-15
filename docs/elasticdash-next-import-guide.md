@@ -39,7 +39,7 @@ The only files that may reference `elasticdash-sdk` are:
 
 ```ts
 // app/api/chat-stream/route.ts  ← Next.js bundles this
-import { wrapTool, readVercelAIStream } from 'elasticdash-sdk'   // ⨯ build error
+import { edTool, readVercelAIStream } from 'elasticdash-sdk'   // ⨯ build error
 ```
 
 **Fix** — Extract the test wrapper into a **sibling file** that Next.js never
@@ -51,7 +51,7 @@ app/api/chat-stream/
   chatStreamHandler.ts  ← test wrapper, only imported by ed_workflows.ts
 ```
 
-`chatStreamHandler.ts` holds the `wrapTool` call and re-exports
+`chatStreamHandler.ts` holds the `edTool` call and re-exports
 `chatStreamHandler` + `ChatStreamResult`. `route.ts` exports only `POST`.
 `ed_workflows.ts` imports from `chatStreamHandler.ts` directly, not from
 `route.ts`.
@@ -101,5 +101,5 @@ package is available).
         scanned file
 - [ ] No static top-level `import … from 'elasticdash-sdk'` inside any
       `app/`, `pages/`, `utils/`, `services/`, or `components/` file
-- [ ] Test wrappers (files that use `wrapTool`, `readVercelAIStream`, etc.)
+- [ ] Test wrappers (files that use `edTool`, `readVercelAIStream`, etc.)
       live in standalone files imported **only** by `ed_workflows.ts`

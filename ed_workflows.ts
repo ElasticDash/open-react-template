@@ -15,7 +15,7 @@
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3001';
 
 // The elasticdash-sdk module must be loaded via eval('require') to share
-// the same CJS module instance as wrapTool/wrapAI (loaded in ed_tools.ts
+// the same CJS module instance as edTool/wrapAI (loaded in ed_tools.ts
 // and route files). Using import() creates a separate ESM instance with
 // separate ALS stores, causing tool events to be invisible to startTrace.
 //

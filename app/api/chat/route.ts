@@ -38,14 +38,27 @@ import { edStartTrace, edEndTrace } from '@/ed_workflows';
 // at build time (serverExternalPackages handles dynamic imports at runtime).
 
 const chatHandlerWrapper = async (request: NextRequest) => {
-  // Register ElasticDash HTTP run context so wrapAI/wrapTool calls push
+  // Register ElasticDash HTTP run context so wrapAI/edTool calls push
   // telemetry events back to the dashboard in real time.
   const edRunId = request.headers.get('x-elasticdash-run-id');
   const edServer = request.headers.get('x-elasticdash-server');
+  // Option-A partial-mocking bridge for HTTP-mode workflows: when an
+  // elasticdash CLI run with --mock-config-file calls into this route via
+  // fetch, the SDK attaches an x-elasticdash-mock-config header upstream.
+  // applyInboundMockConfig reads it and seeds the per-request ALS context
+  // so every edTool / wrapAI call here honors the mocks — no need to
+  // duplicate the workflow as an in-process variant.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { applyInboundMockConfig } = (eval('require') as (id: string) => any)('elasticdash-sdk');
+    applyInboundMockConfig(request);
+  } catch {
+    // elasticdash-sdk not available or older version — proceed without inbound mocks
+  }
   if (edRunId && edServer) {
     try {
       // initHttpRunContext fetches frozen events (for reruns) and sets ALS context
-      // via enterWith() so wrapTool/wrapAI calls can push telemetry to the dashboard.
+      // via enterWith() so edTool/wrapAI calls can push telemetry to the dashboard.
       // eval('require') bypasses Turbopack's static "Module not found" stub.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { initHttpRunContext } = (eval('require') as (id: string) => any)('elasticdash-sdk');
@@ -111,7 +124,17 @@ const chatHandlerWrapper = async (request: NextRequest) => {
   console.log('request: ', request);
 
   return chatHandler({ requestBody, userToken, testCaseId, testCaseRunRecordId })
-  .then((output) => NextResponse.json(output))
+  .then((output) => {
+      // Allow chatHandler to signal a non-200 HTTP status via an optional
+      // `_status` field on the returned object. Keeps chatHandler itself a
+      // plain async function (no NextResponse coupling) so it can be called
+      // directly from in-process elasticdash workflows for partial mocking.
+      if (output && typeof output === 'object' && '_status' in output) {
+        const { _status, ...rest } = output as { _status: number; [k: string]: unknown };
+        return NextResponse.json(rest, { status: _status });
+      }
+      return NextResponse.json(output);
+  })
   .catch((err) => {
       console.error('Error in chatHandler:', err);
       const output = {
@@ -122,15 +145,30 @@ const chatHandlerWrapper = async (request: NextRequest) => {
   });
 };
 
+/**
+ * In-process chat handler. Takes plain input, returns plain output.
+ *
+ * NOT exported: Next.js App Router rejects any named export from a route.ts
+ * file other than the HTTP-method handlers (GET/POST/…) and a small set of
+ * config exports. `ed_workflows.ts` defines its own HTTP-mode `chatHandler`
+ * that fetches `/api/chat` rather than importing this function directly —
+ * the original "exported for partial-mocking workflows" intent has been
+ * replaced by the HTTP-round-trip pattern (see ed_workflows.ts header). If
+ * a future in-process consumer needs this logic, extract it to a sibling
+ * file (e.g. `chatHandler.ts`) and import from both places.
+ *
+ * `_status` on the returned object is a hint for the HTTP wrapper to choose
+ * a non-200 response code; in-process callers can safely ignore it.
+ */
 async function chatHandler(
   {
-    requestBody, 
-    testCaseId, 
+    requestBody,
+    testCaseId,
     testCaseRunRecordId,
     userToken = '',
   }: {
-    requestBody: any, 
-    testCaseId?: string, 
+    requestBody: any,
+    testCaseId?: string,
     testCaseRunRecordId?: string,
     userToken: string
   }): Promise<any> {
@@ -305,11 +343,8 @@ async function chatHandler(
           }
 
           if (!messages || !Array.isArray(messages)) {
-            output = { error: 'Invalid messages format' };
-            return NextResponse.json(
-              output,
-              { status: 400 }
-            );
+            output = { error: 'Invalid messages format', _status: 400 };
+            return output;
           }
 
           // Legacy plumbing — downstream chat-completion calls now route
@@ -319,11 +354,8 @@ async function chatHandler(
 
           // userMessage already extracted above for approval check
           if (!userMessage) {
-            output = { error: 'No user message found' };
-            return NextResponse.json(
-              output,
-              { status: 400 }
-            );
+            output = { error: 'No user message found', _status: 400 };
+            return output;
           }
 
           // Summarize conversation history for context (if messages > 10)

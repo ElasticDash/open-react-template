@@ -10,26 +10,26 @@ import {
 import { clarifyAndRefineUserInput } from "./utils/queryRefinement";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WrapToolFn = <T extends (...args: any[]) => any>(name: string, fn: T) => T;
-// Use the real wrapTool from elasticdash-sdk (supports tool mocking and auto-telemetry).
+// Use the real edTool from elasticdash-sdk (supports tool mocking and auto-telemetry).
 // Falls back to a passthrough stub if the package is unavailable at runtime.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wrapTool: WrapToolFn = (_name: string, fn: any) => fn;
+let edTool: WrapToolFn = (_name: string, fn: any) => fn;
 try {
   // eval('require') bypasses Turbopack's static analysis which shows "Module not found"
   // for serverExternalPackages entries and replaces require() with an error stub at runtime.
   // Node.js resolves elasticdash-sdk natively via the CJS export (dist/index.cjs).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const _edModule = (eval('require') as (id: string) => any)('elasticdash-sdk');
-  wrapTool = _edModule.wrapTool ?? wrapTool;
+  edTool = _edModule.edTool ?? edTool;
   // Share the CJS module instance with ed_workflows.ts so startTrace/endTrace
-  // use the same ALS stores as wrapTool/wrapAI.
+  // use the same ALS stores as edTool/wrapAI.
   setElasticDashModule(_edModule);
   console.log('[ed_tools] elasticdash-sdk loaded, setElasticDashModule called');
 } catch (err) {
   console.error('[ed_tools] Failed to load elasticdash-sdk:', err);
 }
 
-// export const checkApprovalStatus = wrapTool('checkApprovalStatus', async (input: any) => {
+// export const checkApprovalStatus = edTool('checkApprovalStatus', async (input: any) => {
 //     const { sessionId } = input as { sessionId: string };
 //     const TIMEOUT_MS = 5 * 60 * 1000;
 //     const POLL_INTERVAL_MS = 2000;
@@ -61,12 +61,12 @@ try {
 //     return { status, found, timedOut };
 // });
 
-export const apiService = wrapTool('apiService', async (input: any) => {
+export const apiService = edTool('apiService', async (input: any) => {
     const typedInput = input as { baseUrl: string; schema: any };
     return await dynamicApiRequest(typedInput.baseUrl, typedInput.schema);
 });
 
-export const queryRefinement = wrapTool('queryRefinement', async (input: any) => {
+export const queryRefinement = edTool('queryRefinement', async (input: any) => {
     console.log('queryRefinement input:', input);
     const typedInput = input as { userInput: string; userToken?: string };
     try {
@@ -95,7 +95,7 @@ export const queryRefinement = wrapTool('queryRefinement', async (input: any) =>
  * Search Pokémon by name or list by page.
  * Calls PokéAPI GET /pokemon/{name} or /pokemon/?limit=20&offset=…
  */
-export const searchPokemon = wrapTool('searchPokemon', async (input: any) => {
+export const searchPokemon = edTool('searchPokemon', async (input: any) => {
     return await searchPokemonTool(input);
 });
 
@@ -103,7 +103,7 @@ export const searchPokemon = wrapTool('searchPokemon', async (input: any) => {
  * Fetch full Pokémon details (stats, types, abilities, moves, flavor text).
  * Calls PokéAPI GET /pokemon/{id} + /pokemon-species/{id} + per-ability details.
  */
-export const fetchPokemonDetails = wrapTool('fetchPokemonDetails', async (input: any) => {
+export const fetchPokemonDetails = edTool('fetchPokemonDetails', async (input: any) => {
     const { id } = input as { id: number | string };
     return await fetchPokemonDetailsTool(id);
 });
@@ -112,7 +112,7 @@ export const fetchPokemonDetails = wrapTool('fetchPokemonDetails', async (input:
  * Search moves by name or list by page.
  * Calls PokéAPI GET /move/{name} or /move/?limit=20&offset=…
  */
-export const searchMove = wrapTool('searchMove', async (input: any) => {
+export const searchMove = edTool('searchMove', async (input: any) => {
     return await searchMoveTool(input);
 });
 
@@ -120,7 +120,7 @@ export const searchMove = wrapTool('searchMove', async (input: any) => {
  * Search berries by name or list by page.
  * Calls PokéAPI GET /berry/{name} or /berry/?limit=20&offset=…
  */
-export const searchBerry = wrapTool('searchBerry', async (input: any) => {
+export const searchBerry = edTool('searchBerry', async (input: any) => {
     return await searchBerryTool(input);
 });
 
@@ -128,7 +128,7 @@ export const searchBerry = wrapTool('searchBerry', async (input: any) => {
  * Search abilities by name or list by page.
  * Calls PokéAPI GET /ability/{name} or /ability/?limit=20&offset=…
  */
-export const searchAbility = wrapTool('searchAbility', async (input: any) => {
+export const searchAbility = edTool('searchAbility', async (input: any) => {
     return await searchAbilityTool(input);
 });
 

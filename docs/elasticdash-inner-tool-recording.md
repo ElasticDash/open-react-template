@@ -30,8 +30,8 @@ But the elasticdash worker subprocess (`workflow-runner-worker.ts`) only sets:
 
 The env var `ELASTICDASH_WORKER` is **never set** by the worker. The guard
 therefore always fires — `recordToolCall` is never reached, regardless of any
-other conditions. This is why Option A (removing `wrapTool`) also failed: the
-call to `recordToolCall` was short-circuited before the `wrapTool` flag was
+other conditions. This is why Option A (removing `edTool`) also failed: the
+call to `recordToolCall` was short-circuited before the `edTool` flag was
 ever checked.
 
 **Fix:** Change the guard to use the global flag:
@@ -40,14 +40,14 @@ ever checked.
 if (!(globalThis as any).__ELASTICDASH_WORKER__) return;
 ```
 
-### Bug 2 — `wrapTool` deduplication flag suppresses inner recordings (secondary)
+### Bug 2 — `edTool` deduplication flag suppresses inner recordings (secondary)
 
-`wrapTool` (used to wrap `chatStreamHandler`'s inner implementation) sets a
+`edTool` (used to wrap `chatStreamHandler`'s inner implementation) sets a
 **process-global flag** `__elasticdash_tool_wrapper_active__` for the entire
 duration of the wrapped function:
 
 ```ts
-// tool.ts — inside wrapTool
+// tool.ts — inside edTool
 g[TOOL_WRAPPER_ACTIVE_KEY] = true   // set on entry
 // ... calls fn(...args) ...
 g[TOOL_WRAPPER_ACTIVE_KEY] = prev   // restored on exit
@@ -60,9 +60,9 @@ g[TOOL_WRAPPER_ACTIVE_KEY] = prev   // restored on exit
 if (wrapperRecordingActive()) return   // ← silently skips
 ```
 
-The guard prevents double-recording when a `wrapTool`-wrapped function
+The guard prevents double-recording when a `edTool`-wrapped function
 internally calls `recordToolCall` for the same event. In the
-`chatStreamHandler` architecture, `wrapTool('chatStream', ...)` wraps the
+`chatStreamHandler` architecture, `edTool('chatStream', ...)` wraps the
 **entire pipeline**, so the flag stays `true` for the full lifetime of
 `POST(req)`. Every `safeRecordToolCall(...)` call inside `ed_tools.ts`
 (including `queryRefinement`) hits this guard and returns early.
@@ -72,7 +72,7 @@ The AI-level fetch calls escape this because the fetch interceptor
 It runs on every intercepted `fetch()` regardless of nesting depth, which is
 why the underlying LLM call for `queryRefinement` IS captured.
 
-**Fix:** Don't use `wrapTool` for the outer pipeline. Call `recordToolCall`
+**Fix:** Don't use `edTool` for the outer pipeline. Call `recordToolCall`
 manually after the pipeline completes (no flag is set, inner tools can
 self-record).
 
@@ -117,10 +117,10 @@ downstream planning failures.
 
 ## How to fix the missing tool recording
 
-The guard is intentional but too broad when `wrapTool` wraps a
+The guard is intentional but too broad when `edTool` wraps a
 coarse-grained outer function that itself contains fine-grained tool calls.
 
-### Implemented fix — manual `recordToolCall`, no `wrapTool`
+### Implemented fix — manual `recordToolCall`, no `edTool`
 
 Both bugs must be addressed together:
 
@@ -134,7 +134,7 @@ if (process.env.ELASTICDASH_WORKER !== 'true') return;
 if (!(globalThis as any).__ELASTICDASH_WORKER__) return;
 ```
 
-**Step 2 — Remove `wrapTool` from the outer pipeline** in `chatStreamHandler.ts`.
+**Step 2 — Remove `edTool` from the outer pipeline** in `chatStreamHandler.ts`.
 Record the outer `chatStream` event manually after the pipeline completes so
 the `wrapperRecordingActive` flag is never set:
 
@@ -151,7 +151,7 @@ This gives:
 - ✅ Outer `chatStream` event recorded (input + output, `durationMs` = 0)
 - ❌ No replay support for the outer pipeline (replay of inner tools still works)
 
-If replay of the full pipeline is needed in future, the SDK's `wrapTool` would
+If replay of the full pipeline is needed in future, the SDK's `edTool` would
 need an option to opt out of the deduplication flag (e.g. `{ suppressInnerRecording: false }`).
 
 ## Retrieved log
