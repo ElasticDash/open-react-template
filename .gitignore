@@ -47,3 +47,5 @@ dist/
 rag_apis.json
 package-test.json
 package-actual.json
+
+.elasticdash/
